@@ -37,7 +37,7 @@ public class OrderServiceController {
         } catch (HttpClientErrorException ex) {
             OrderResponse orderResponse = OrderResponse.builder()
                     .statusCode(ex.getStatusCode().value())
-                    .message(ex.getResponseBodyAsString().get)
+                    .message(ex.getResponseBodyAsString())
                     .build();
             return ResponseEntity.badRequest().body(orderResponse);
         }
