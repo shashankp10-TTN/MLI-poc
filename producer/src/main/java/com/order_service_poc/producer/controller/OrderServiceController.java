@@ -3,6 +3,7 @@ package com.order_service_poc.producer.controller;
 import com.order_service_poc.producer.dto.request.OrderRequest;
 import com.order_service_poc.producer.dto.request.ProductRequest;
 import com.order_service_poc.producer.dto.response.OrderResponse;
+import com.order_service_poc.producer.service.impl.EncryptionServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -10,12 +11,15 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
+import java.security.PublicKey;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/producer")
 public class OrderServiceController {
 
     private final RestTemplate restTemplate;
+    private final EncryptionServiceImpl encryptionService;
 
     @PostMapping("/add")
     public ResponseEntity<String> addProduct(@RequestBody ProductRequest productRequest) {
@@ -43,4 +47,29 @@ public class OrderServiceController {
         }
     }
 
+    @GetMapping("/public-key")
+    public ResponseEntity<String> getAsymmetricPublicKey() {
+        try {
+            String url = "http://localhost:8082/api/v1/consumer/public-key";
+            ResponseEntity<String> response =  restTemplate.getForEntity(url, String.class);
+            String publicKey = response.getBody();
+            return ResponseEntity.ok(encryptionService.storeAsymmetricKey(publicKey));
+        } catch (HttpClientErrorException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        }
+    }
+
+    @PostMapping("/data-key")
+    public ResponseEntity<String> sendSymmetricKey() {
+        try {
+            String url = "http://localhost:8082/api/v1/consumer/data-key";
+            String encryptedSymmetricKey = encryptionService.generateSymmetricKey();
+            restTemplate.postForEntity(url,encryptedSymmetricKey, String.class);
+            return ResponseEntity.ok("Symmetric key generated successfully!");
+        } catch (HttpClientErrorException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

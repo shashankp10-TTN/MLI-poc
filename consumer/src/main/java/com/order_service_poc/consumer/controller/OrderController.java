@@ -4,14 +4,15 @@ import com.order_service_poc.consumer.dto.OrderRequest;
 import com.order_service_poc.consumer.dto.OrderResponse;
 import com.order_service_poc.consumer.dto.ProductRequest;
 import com.order_service_poc.consumer.entity.Product;
+import com.order_service_poc.consumer.service.EncryptionService;
 import com.order_service_poc.consumer.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
+
+import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
 
 @RestController
 @RequiredArgsConstructor
@@ -19,6 +20,7 @@ import org.springframework.web.client.RestTemplate;
 public class OrderController {
 
     private final OrderService orderService;
+    private final EncryptionService encryptionService;
 
     @PostMapping("/add")
     public ResponseEntity<String> addProduct(@RequestBody ProductRequest productRequest) {
@@ -30,5 +32,17 @@ public class OrderController {
     public ResponseEntity<OrderResponse> placeOrder(@RequestBody OrderRequest orderRequest) {
         String message = orderService.placeOrder(orderRequest);
         return ResponseEntity.ok(OrderResponse.builder().message(message).build());
+    }
+
+    @GetMapping("/public-key")
+    public ResponseEntity<PublicKey> sendAsymmetricPublicKey() throws NoSuchAlgorithmException {
+        PublicKey publicKey = encryptionService.generateAsymmetricKeys();
+        return ResponseEntity.ok(publicKey);
+    }
+
+    @PostMapping("/data-key")
+    public ResponseEntity<String> generateAsymmetricKey(@RequestBody String symmetricKey) throws Exception {
+        String message = encryptionService.storeSymmetricKey(symmetricKey);
+        return ResponseEntity.ok(message);
     }
 }
