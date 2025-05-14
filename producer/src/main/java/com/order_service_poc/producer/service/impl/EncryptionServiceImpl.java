@@ -1,32 +1,36 @@
 package com.order_service_poc.producer.service.impl;
 
+import com.order_service_poc.producer.entity.Keys;
+import com.order_service_poc.producer.repo.AsymmetricKeyRepo;
 import com.order_service_poc.producer.service.EncryptionService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.*;
-import java.io.*;
+import java.security.Key;
 import java.security.KeyFactory;
 import java.security.PublicKey;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class EncryptionServiceImpl implements EncryptionService {
 
+    private final AsymmetricKeyRepo asymmetricKeyRepo;
+
     @Override
-    public String storeAsymmetricKey(String publicKey) {
-        String fileName = "asymmetric_publicKey.txt";
-        String resourcePath = "src/main/resources/" + fileName;
-        try {
-            File file = new File(resourcePath);
-            FileWriter writer = new FileWriter(file);
-            writer.write("publicKey" + "=" + publicKey + System.lineSeparator());
-            writer.close();
-            return "Public key successfully stored!";
-        } catch (IOException e) {
-            e.printStackTrace();
-            return "Something went wrong, unable to store public key!";
-        }
+    public String storeAsymmetricKey(String publicKey) throws Exception {
+        Map<String, String> keyMap = new HashMap<>();
+        keyMap.put("publicKey", publicKey);
+        asymmetricKeyRepo.save(Keys.builder()
+                                    .keys(keyMap)
+                                    .build());
+        return "Asymmetric public key stored!";
     }
 
     @Override
@@ -35,20 +39,35 @@ public class EncryptionServiceImpl implements EncryptionService {
         keyGenerator.init(128);
         SecretKey secretKey = keyGenerator.generateKey();
 
-        storeSymmetricKey(secretKey.toString());
-        System.out.println("producer : " +  Base64.getEncoder().encodeToString(secretKey.getEncoded()));
-        return encryptSymmetricKey(secretKey.toString());
+        String clientSecretKey = Base64.getEncoder().encodeToString(secretKey.getEncoded());
+        System.out.println("Before encryption: " + clientSecretKey);
+
+        Map<String, String> keyMap = new HashMap<>();
+        keyMap.put("clientSecret", clientSecretKey);
+        asymmetricKeyRepo.save(Keys.builder()
+                .keys(keyMap)
+                .build());
+        return encryptClientSecretKey(secretKey);
     }
 
-    private String encryptSymmetricKey(String clientSecret) throws Exception {
-        String publicAsymmetricKey = getKeyFromFile("publicKey","asymmetric_publicKey.txt");
-//        String clientSecret = getKeyFromFile("secretKey", "symmetricKey.txt"); // data
+    private String encryptClientSecretKey(Key clientSecret) throws Exception {
+        List<Map<String, String>> keyMap = asymmetricKeyRepo.findAll()
+                                            .stream()
+                                            .map(Keys::getKeys)
+                                            .toList();
+        String publicAsymmetricKey = null;
+        for(Map<String, String> key : keyMap){
+            if(key.containsKey("publicKey")) {
+                publicAsymmetricKey = key.get("publicKey");
+            }
+        }
 
         Cipher cipher = Cipher.getInstance("RSA");
         cipher.init(Cipher.ENCRYPT_MODE, getPublicKeyFromBase64(publicAsymmetricKey));
         byte[] encryptedBytes = null;
         if(clientSecret!=null)
-            encryptedBytes = cipher.doFinal(clientSecret.getBytes());
+            encryptedBytes = cipher.doFinal(clientSecret.getEncoded());
+        System.out.println("After encrypting client secret : " + Base64.getEncoder().encodeToString(encryptedBytes));
         return Base64.getEncoder().encodeToString(encryptedBytes);
     }
 
@@ -59,33 +78,5 @@ public class EncryptionServiceImpl implements EncryptionService {
         return keyFactory.generatePublic(keySpec);
     }
 
-    private String getKeyFromFile(String key, String fileName) {
-        String resourcePath = "src/main/resources/" + fileName;
-        File file = new File(resourcePath);
-        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                if (line.startsWith(key+"=")) {
-                    return line.substring((key + "=").length()).trim();
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    private void storeSymmetricKey(String key) {
-        String fileName = "symmetricKey.txt";
-        String resourcePath = "src/main/resources/" + fileName;
-        try {
-            File file = new File(resourcePath);
-            FileWriter writer = new FileWriter(file);
-            writer.write("secretKey" + "=" + key + System.lineSeparator());
-            writer.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 
 }

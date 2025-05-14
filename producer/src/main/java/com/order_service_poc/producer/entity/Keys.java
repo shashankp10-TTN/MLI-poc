@@ -1,4 +1,4 @@
-package com.order_service_poc.consumer.entity;
+package com.order_service_poc.producer.entity;
 
 import lombok.Builder;
 import lombok.Getter;
@@ -10,12 +10,11 @@ import java.security.Key;
 import java.util.Map;
 
 @Builder
-@Document(collection = "serverAsymmetricKeys")
+@Document(collection = "clientAsymmetricKey")
 @Getter
 @Setter
-public class AsymmetricKey {
+public class Keys {
     @Id
     private String id;
     private Map<String, String> keys;
-
 }

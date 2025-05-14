@@ -10,12 +10,12 @@ import java.security.Key;
 import java.util.Map;
 
 @Builder
-@Document(collection = "serverAsymmetricKeys")
+@Document(collection = "serverClientSecret")
 @Getter
 @Setter
-public class AsymmetricKey {
+public class Keys {
     @Id
     private String id;
     private Map<String, String> keys;
-
 }
+

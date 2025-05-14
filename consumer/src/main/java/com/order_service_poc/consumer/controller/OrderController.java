@@ -35,8 +35,8 @@ public class OrderController {
     }
 
     @GetMapping("/public-key")
-    public ResponseEntity<PublicKey> sendAsymmetricPublicKey() throws NoSuchAlgorithmException {
-        PublicKey publicKey = encryptionService.generateAsymmetricKeys();
+    public ResponseEntity<String> sendAsymmetricPublicKey() throws NoSuchAlgorithmException {
+        String publicKey = encryptionService.generateAsymmetricKeys();
         return ResponseEntity.ok(publicKey);
     }
 

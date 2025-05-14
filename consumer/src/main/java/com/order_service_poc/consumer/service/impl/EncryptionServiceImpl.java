@@ -1,13 +1,17 @@
 package com.order_service_poc.consumer.service.impl;
 
 import com.order_service_poc.consumer.entity.AsymmetricKey;
+import com.order_service_poc.consumer.entity.Keys;
 import com.order_service_poc.consumer.repo.AsymmetricKeyRepo;
+import com.order_service_poc.consumer.repo.KeysRepo;
 import com.order_service_poc.consumer.service.EncryptionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.Cipher;
 import javax.crypto.NoSuchPaddingException;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
@@ -15,6 +19,7 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -22,45 +27,54 @@ import java.util.Map;
 public class EncryptionServiceImpl implements EncryptionService {
 
     private final AsymmetricKeyRepo asymmetricKeyRepo;
+    private final KeysRepo keysRepo;
 
     @Override
-    public PublicKey generateAsymmetricKeys() throws NoSuchAlgorithmException {
+    public String generateAsymmetricKeys() throws NoSuchAlgorithmException {
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
         keyPairGenerator.initialize(2048);
         KeyPair keyPair = keyPairGenerator.generateKeyPair();
 
-        Map<String, Key> map = new HashMap<>();
-        map.put("publicKey", keyPair.getPublic());
-        map.put("privateKey", keyPair.getPrivate());
+        String publicKey = Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded());
+        String privateKey = Base64.getEncoder().encodeToString(keyPair.getPrivate().getEncoded());
+
+        Map<String, String> map = new HashMap<>();
+        map.put("publicKey", publicKey);
+        map.put("privateKey", privateKey);
 
         asymmetricKeyRepo.save(AsymmetricKey.builder()
                                 .keys(map)
                                 .build());
-        return keyPair.getPublic();
+        return publicKey;
     }
 
     @Override
     public String storeSymmetricKey(String data) throws Exception {
-        Cipher cipher = Cipher.getInstance("RSA");
-        String privateKey = getKeyFromFile("privateKey", "asymmetric_keys.txt");
-
-        cipher.init(Cipher.DECRYPT_MODE, getPrivateKeyFromBase64(privateKey));
-
-        byte[] encryptedBytes = Base64.getDecoder().decode(data);
-        byte[] decryptedMessageBytes = cipher.doFinal(encryptedBytes);
-        String secretKey = new String(decryptedMessageBytes, StandardCharsets.UTF_8);
-        String fileName = "client_secretKey.txt";
-        String resourcePath = "src/main/resources/" + fileName;
-        try {
-            File file = new File(resourcePath);
-            FileWriter writer = new FileWriter(file);
-            writer.write("clientSecret=" + secretKey);
-            writer.close();
-            return "Key stored successfully";
-        } catch (IOException e) {
-            e.printStackTrace();
-            return "Something went wrong! Unable to store the key";
+        List<Map<String, String>> keyMap = asymmetricKeyRepo.findAll()
+                .stream()
+                .map(AsymmetricKey::getKeys)
+                .toList();
+        String privateAsymmetricKey = null;
+        for(Map<String, String> key : keyMap){
+            if(key.containsKey("privateKey")) {
+                privateAsymmetricKey = key.get("privateKey");
+            }
         }
+
+        Cipher cipher = Cipher.getInstance("RSA");
+        cipher.init(Cipher.DECRYPT_MODE, getPrivateKeyFromBase64(privateAsymmetricKey));
+
+        byte[] encryptedSecretBytes = Base64.getDecoder().decode(data);
+        byte[] decryptedSecretBytes = cipher.doFinal(encryptedSecretBytes);
+        String clientSecretKey = new String(decryptedSecretBytes, StandardCharsets.UTF_8);
+        System.out.println("consumer side, client key: " + clientSecretKey);
+
+        Map<String, String> map = new HashMap<>();
+        map.put("clientSecret", clientSecretKey);
+        keysRepo.save(Keys.builder()
+                .keys(map)
+                .build());
+        return "Client secret is stored successfully!";
     }
 
     private PrivateKey getPrivateKeyFromBase64(String base64PrivateKey) throws Exception {
@@ -68,22 +82,6 @@ public class EncryptionServiceImpl implements EncryptionService {
         PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(decodedKey);
         KeyFactory keyFactory = KeyFactory.getInstance("RSA");
         return keyFactory.generatePrivate(keySpec);
-    }
-
-    private String getKeyFromFile(String key, String fileName) {
-        String resourcePath = "src/main/resources/" + fileName;
-        File file = new File(resourcePath);
-        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                if (line.startsWith(key+"=")) {
-                    return line.substring((key + "=").length()).trim();
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return null;
     }
 
 }

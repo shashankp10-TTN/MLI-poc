@@ -56,6 +56,8 @@ public class OrderServiceController {
             return ResponseEntity.ok(encryptionService.storeAsymmetricKey(publicKey));
         } catch (HttpClientErrorException ex) {
             return ResponseEntity.badRequest().body(ex.getMessage());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
