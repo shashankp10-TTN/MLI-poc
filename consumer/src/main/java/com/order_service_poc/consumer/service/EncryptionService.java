@@ -9,5 +9,7 @@ public interface EncryptionService {
 
    String generateExchangePublicKey() throws NoSuchAlgorithmException;
 
+   String decryptPayload(String encryptedPayload) throws Exception;
+
    String storeClientSecret(String encryptedClientSecret) throws Exception;
 }

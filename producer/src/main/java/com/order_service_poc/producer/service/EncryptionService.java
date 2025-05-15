@@ -6,7 +6,7 @@ public interface EncryptionService {
 
     String generateClientSecret() throws Exception;
 
-//    String encryptSymmetricKey(String clientSecret) throws Exception;
+    String encryptPayload(String payload) throws Exception;
 
 }
 

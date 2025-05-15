@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.Cipher;
+import javax.crypto.NoSuchPaddingException;
 import java.security.*;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Base64;
@@ -42,11 +43,24 @@ public class EncryptionServiceImpl implements EncryptionService {
 
     @Override
     public String storeClientSecret(String encryptedClientSecret) throws Exception {
+        String originalClientSecret = decryptPayload(encryptedClientSecret);
 
-        // 1. decode from base64
-        byte[] keyBytes = Base64.getDecoder().decode(encryptedClientSecret);
+//        String decryptedClientSecret = new String(originalClientSecret);
+        ObjectMapper objectMapper = new ObjectMapper();
+        String originalEncodedPayload = objectMapper.readValue(originalClientSecret, String.class);
+        System.out.println("client secret key: " + originalEncodedPayload);
 
-        // 2. decrypt using private key
+        Map<String, String> map = new HashMap<>();
+        map.put("clientSecret", originalClientSecret);
+        keysRepo.save(Keys.builder()
+                .keys(map)
+                .build());
+        return "Client secret is stored successfully!";
+    }
+
+    @Override
+    public String decryptPayload(String encryptedPayload) throws Exception {
+        // 1. decrypt using private key
         List<Map<String, String>> keyMap = keysRepo.findAll()
                 .stream()
                 .map(Keys::getKeys)
@@ -59,23 +73,11 @@ public class EncryptionServiceImpl implements EncryptionService {
         }
         Cipher cipher = Cipher.getInstance("RSA");
         cipher.init(Cipher.DECRYPT_MODE, getPrivateKeyFromBase64(privateKey));
-        byte[] encryptedSecretBytes = Base64.getDecoder().decode(encryptedClientSecret);
+        byte[] encryptedSecretBytes = Base64.getDecoder().decode(encryptedPayload);
         byte[] decryptedSecretBytes = cipher.doFinal(encryptedSecretBytes);
 
-        // 3. convert back to original form
+        return new String(decryptedSecretBytes);
 
-        String decryptedClientSecret = new String(decryptedSecretBytes);
-        ObjectMapper objectMapper = new ObjectMapper();
-        String originalClientSecret = objectMapper.readValue(decryptedClientSecret, String.class);
-        System.out.println("client secret key: " + originalClientSecret);
-
-        // 4. store client secret
-        Map<String, String> map = new HashMap<>();
-        map.put("clientSecret", originalClientSecret);
-        keysRepo.save(Keys.builder()
-                .keys(map)
-                .build());
-        return "Client secret is stored successfully!";
     }
 
     private PrivateKey getPrivateKeyFromBase64(String base64PrivateKey) throws Exception {

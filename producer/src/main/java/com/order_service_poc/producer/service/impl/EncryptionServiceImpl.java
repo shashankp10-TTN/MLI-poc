@@ -49,10 +49,17 @@ public class EncryptionServiceImpl implements EncryptionService {
         keysRepo.save(Keys.builder()
                 .keys(keyMap)
                 .build());
-        return encryptClientSecretKey(clientSecretKey);
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        String jsonData = objectMapper.writeValueAsString(clientSecretKey);
+
+        return encryptPayload(jsonData);
     }
 
-    private String encryptClientSecretKey(String clientSecret) throws Exception {
+
+    @Override
+    public String encryptPayload(String jsonData) throws Exception {
+        // extract exchange key from the db
         List<Map<String, String>> keyMap = keysRepo.findAll()
                 .stream()
                 .map(Keys::getKeys)
@@ -63,21 +70,14 @@ public class EncryptionServiceImpl implements EncryptionService {
                 exchangeKey = key.get("publicKey");
             }
         }
-        // 1. convert data to JSON string
-        ObjectMapper objectMapper = new ObjectMapper();
-        String jsonData = objectMapper.writeValueAsString(clientSecret);
 
-        // 2. encrypt the data using exchange key
+        // encrypt the data using exchange key
         Cipher cipher = Cipher.getInstance("RSA");
         cipher.init(Cipher.ENCRYPT_MODE, getPublicKeyFromBase64(exchangeKey));
-        byte[] encryptedBytes = null;
-        if (clientSecret != null)
-            encryptedBytes = cipher.doFinal(jsonData.getBytes());
+        byte[] encryptedBytes = cipher.doFinal(jsonData.getBytes());
 
-        // 3. convert in Base64 encode for safe transfer
-        String encodedEncryptedClientSecret = Base64.getEncoder().encodeToString(encryptedBytes);
-        System.out.println("client secret key after encryption : " + encodedEncryptedClientSecret);
-        return encodedEncryptedClientSecret;
+        // convert in Base64 encode for safe transfer
+        return Base64.getEncoder().encodeToString(encryptedBytes);
     }
 
     private PublicKey getPublicKeyFromBase64(String base64PublicKey) throws Exception {

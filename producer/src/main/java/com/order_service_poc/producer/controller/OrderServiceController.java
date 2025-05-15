@@ -1,8 +1,10 @@
 package com.order_service_poc.producer.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.order_service_poc.producer.dto.request.OrderRequest;
 import com.order_service_poc.producer.dto.request.ProductRequest;
 import com.order_service_poc.producer.dto.response.OrderResponse;
+import com.order_service_poc.producer.service.EncryptionService;
 import com.order_service_poc.producer.service.impl.EncryptionServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -19,12 +21,20 @@ import java.security.PublicKey;
 public class OrderServiceController {
 
     private final RestTemplate restTemplate;
-    private final EncryptionServiceImpl encryptionService;
+    private final EncryptionService encryptionService;
 
     @PostMapping("/add")
-    public ResponseEntity<String> addProduct(@RequestBody ProductRequest productRequest) {
+    public ResponseEntity<String> addProduct(@RequestBody ProductRequest productRequest) throws Exception {
         String url = "http://localhost:8082/api/v1/consumer/add";
-        restTemplate.postForEntity(url, productRequest, String.class);
+
+        System.out.println("Actual payload : " + productRequest.getProductName() + ", " + productRequest.getPrice());
+        ObjectMapper objectMapper = new ObjectMapper();
+        String encodedJson = objectMapper.writeValueAsString(productRequest);
+        System.out.println("Encoded json : " + encodedJson);
+
+        String encryptedPayload = encryptionService.encryptPayload(encodedJson);
+        System.out.println("Encrypted payload : " + encryptedPayload);
+        restTemplate.postForEntity(url, encryptedPayload, String.class);
         return ResponseEntity.ok("Product added successfully");
     }
 
@@ -62,7 +72,7 @@ public class OrderServiceController {
     }
 
     @PostMapping("/data-key")
-    public ResponseEntity<String> sendSymmetricKey() {
+    public ResponseEntity<String> sendClientSecret() {
         try {
             String url = "http://localhost:8082/api/v1/consumer/data-key";
             String encryptedSymmetricKey = encryptionService.generateClientSecret();

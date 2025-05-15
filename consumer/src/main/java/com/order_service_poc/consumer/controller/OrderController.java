@@ -1,5 +1,6 @@
 package com.order_service_poc.consumer.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.order_service_poc.consumer.dto.OrderRequest;
 import com.order_service_poc.consumer.dto.OrderResponse;
 import com.order_service_poc.consumer.dto.ProductRequest;
@@ -23,8 +24,8 @@ public class OrderController {
     private final EncryptionService encryptionService;
 
     @PostMapping("/add")
-    public ResponseEntity<String> addProduct(@RequestBody ProductRequest productRequest) {
-        String message = orderService.addProduct(productRequest);
+    public ResponseEntity<String> addProduct(@RequestBody String encryptedPayload) throws Exception {
+        String message = orderService.addProduct(encryptedPayload);
         return ResponseEntity.ok(message);
     }
 
