@@ -1,19 +1,17 @@
 package com.order_service_poc.producer.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.order_service_poc.producer.dto.request.OrderRequest;
 import com.order_service_poc.producer.dto.request.ProductRequest;
-import com.order_service_poc.producer.dto.response.OrderResponse;
+import com.order_service_poc.producer.dto.response.Response;
 import com.order_service_poc.producer.service.EncryptionService;
-import com.order_service_poc.producer.service.impl.EncryptionServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
-
-import java.security.PublicKey;
 
 @RestController
 @RequiredArgsConstructor
@@ -25,35 +23,56 @@ public class OrderServiceController {
 
     @PostMapping("/add")
     public ResponseEntity<String> addProduct(@RequestBody ProductRequest productRequest) throws Exception {
-        String url = "http://localhost:8082/api/v1/consumer/add";
+        try {
+            String url = "http://localhost:8082/api/v1/consumer/add";
 
-        System.out.println("Actual payload : " + productRequest.getProductName() + ", " + productRequest.getPrice());
-        ObjectMapper objectMapper = new ObjectMapper();
-        String encodedJson = objectMapper.writeValueAsString(productRequest);
-        System.out.println("Encoded json : " + encodedJson);
+            System.out.println("Actual payload : " + productRequest.getProductName() + ", " + productRequest.getPrice());
+            ObjectMapper objectMapper = new ObjectMapper();
+            String encodedJson = objectMapper.writeValueAsString(productRequest);
+            System.out.println("Encoded json : " + encodedJson);
 
-        String encryptedPayload = encryptionService.encryptPayload(encodedJson);
-        System.out.println("Encrypted payload : " + encryptedPayload);
-        restTemplate.postForEntity(url, encryptedPayload, String.class);
-        return ResponseEntity.ok("Product added successfully");
+            String encryptedPayload = encryptionService.encryptPayload(encodedJson);
+            System.out.println("Encrypted payload : " + encryptedPayload);
+            restTemplate.postForEntity(url, encryptedPayload, String.class);
+            return ResponseEntity.ok("Product added successfully");
+        } catch (HttpClientErrorException ex) {
+            Response orderResponse = Response.builder()
+                    .statusCode(ex.getStatusCode().value())
+                    .message(ex.getResponseBodyAsString())
+                    .build();
+            return ResponseEntity.badRequest().body("Something went wrong!");
+        }
     }
 
     @PostMapping("/order")
-    public ResponseEntity<OrderResponse> placeOrder(@RequestBody OrderRequest orderRequest) {
+    public ResponseEntity<Response> placeOrder(@RequestBody OrderRequest orderRequest) {
         try {
             String url = "http://localhost:8082/api/v1/consumer/order";
-            restTemplate.postForEntity(url, orderRequest, String.class);
-            OrderResponse orderResponse = OrderResponse.builder()
+
+            System.out.println("Actual payload : " + orderRequest.getId() + ", " + orderRequest.getQuantity());
+            ObjectMapper objectMapper = new ObjectMapper();
+            String encodedJson = objectMapper.writeValueAsString(orderRequest);
+            System.out.println("Encoded json : " + encodedJson);
+
+            String encryptedPayload = encryptionService.encryptPayload(encodedJson);
+            System.out.println("Encrypted payload : " + encryptedPayload);
+
+            restTemplate.postForEntity(url, encryptedPayload, String.class);
+            Response orderResponse = Response.builder()
                     .statusCode(HttpStatus.OK.value())
-                    .message("Product added successfully!")
+                    .message("Order placed successfully!")
                     .build();
             return ResponseEntity.ok(orderResponse);
         } catch (HttpClientErrorException ex) {
-            OrderResponse orderResponse = OrderResponse.builder()
+            Response orderResponse = Response.builder()
                     .statusCode(ex.getStatusCode().value())
                     .message(ex.getResponseBodyAsString())
                     .build();
             return ResponseEntity.badRequest().body(orderResponse);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 

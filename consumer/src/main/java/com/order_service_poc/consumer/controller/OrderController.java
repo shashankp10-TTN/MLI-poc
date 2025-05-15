@@ -30,8 +30,8 @@ public class OrderController {
     }
 
     @PostMapping("/order")
-    public ResponseEntity<OrderResponse> placeOrder(@RequestBody OrderRequest orderRequest) {
-        String message = orderService.placeOrder(orderRequest);
+    public ResponseEntity<OrderResponse> placeOrder(@RequestBody String encryptedPayload) throws Exception {
+        String message = orderService.placeOrder(encryptedPayload);
         return ResponseEntity.ok(OrderResponse.builder().message(message).build());
     }
 
