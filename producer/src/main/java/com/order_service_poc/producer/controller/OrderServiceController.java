@@ -36,10 +36,6 @@ public class OrderServiceController {
             restTemplate.postForEntity(url, encryptedPayload, String.class);
             return ResponseEntity.ok("Product added successfully");
         } catch (HttpClientErrorException ex) {
-            Response orderResponse = Response.builder()
-                    .statusCode(ex.getStatusCode().value())
-                    .message(ex.getResponseBodyAsString())
-                    .build();
             return ResponseEntity.badRequest().body("Something went wrong!");
         }
     }
