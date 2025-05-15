@@ -6,11 +6,10 @@ import lombok.Setter;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.security.Key;
 import java.util.Map;
 
 @Builder
-@Document(collection = "clientAsymmetricKey")
+@Document(collection = "clientSideKeys")
 @Getter
 @Setter
 public class Keys {

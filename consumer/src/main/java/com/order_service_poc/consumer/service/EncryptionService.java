@@ -7,7 +7,7 @@ import java.util.Map;
 
 public interface EncryptionService {
 
-   String generateAsymmetricKeys() throws NoSuchAlgorithmException;
+   String generateExchangePublicKey() throws NoSuchAlgorithmException;
 
-   String storeSymmetricKey(String secretKey) throws Exception;
+   String storeClientSecret(String encryptedClientSecret) throws Exception;
 }

@@ -48,12 +48,12 @@ public class OrderServiceController {
     }
 
     @GetMapping("/public-key")
-    public ResponseEntity<String> getAsymmetricPublicKey() {
+    public ResponseEntity<String> getExchangePublicKey() {
         try {
             String url = "http://localhost:8082/api/v1/consumer/public-key";
             ResponseEntity<String> response =  restTemplate.getForEntity(url, String.class);
             String publicKey = response.getBody();
-            return ResponseEntity.ok(encryptionService.storeAsymmetricKey(publicKey));
+            return ResponseEntity.ok(encryptionService.storeExchangePublicKey(publicKey));
         } catch (HttpClientErrorException ex) {
             return ResponseEntity.badRequest().body(ex.getMessage());
         } catch (Exception e) {
@@ -65,9 +65,9 @@ public class OrderServiceController {
     public ResponseEntity<String> sendSymmetricKey() {
         try {
             String url = "http://localhost:8082/api/v1/consumer/data-key";
-            String encryptedSymmetricKey = encryptionService.generateSymmetricKey();
+            String encryptedSymmetricKey = encryptionService.generateClientSecret();
             restTemplate.postForEntity(url,encryptedSymmetricKey, String.class);
-            return ResponseEntity.ok("Symmetric key generated successfully!");
+            return ResponseEntity.ok("Client secret generated successfully!");
         } catch (HttpClientErrorException ex) {
             return ResponseEntity.badRequest().body(ex.getMessage());
         } catch (Exception e) {

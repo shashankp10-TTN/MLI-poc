@@ -35,14 +35,14 @@ public class OrderController {
     }
 
     @GetMapping("/public-key")
-    public ResponseEntity<String> sendAsymmetricPublicKey() throws NoSuchAlgorithmException {
-        String publicKey = encryptionService.generateAsymmetricKeys();
-        return ResponseEntity.ok(publicKey);
+    public ResponseEntity<String> sendExchangePublicKey() throws NoSuchAlgorithmException {
+        String exchangePublicKey = encryptionService.generateExchangePublicKey();
+        return ResponseEntity.ok(exchangePublicKey);
     }
 
     @PostMapping("/data-key")
-    public ResponseEntity<String> generateAsymmetricKey(@RequestBody String symmetricKey) throws Exception {
-        String message = encryptionService.storeSymmetricKey(symmetricKey);
+    public ResponseEntity<String> generateAsymmetricKey(@RequestBody String encryptedClientSecret) throws Exception {
+        String message = encryptionService.storeClientSecret(encryptedClientSecret);
         return ResponseEntity.ok(message);
     }
 }

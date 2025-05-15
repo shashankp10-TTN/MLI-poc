@@ -1,22 +1,15 @@
 package com.order_service_poc.consumer.service.impl;
 
-import com.order_service_poc.consumer.entity.AsymmetricKey;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.order_service_poc.consumer.entity.Keys;
-import com.order_service_poc.consumer.repo.AsymmetricKeyRepo;
 import com.order_service_poc.consumer.repo.KeysRepo;
 import com.order_service_poc.consumer.service.EncryptionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.Cipher;
-import javax.crypto.NoSuchPaddingException;
-import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
-import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
@@ -26,11 +19,10 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class EncryptionServiceImpl implements EncryptionService {
 
-    private final AsymmetricKeyRepo asymmetricKeyRepo;
     private final KeysRepo keysRepo;
 
     @Override
-    public String generateAsymmetricKeys() throws NoSuchAlgorithmException {
+    public String generateExchangePublicKey() throws NoSuchAlgorithmException {
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
         keyPairGenerator.initialize(2048);
         KeyPair keyPair = keyPairGenerator.generateKeyPair();
@@ -42,35 +34,44 @@ public class EncryptionServiceImpl implements EncryptionService {
         map.put("publicKey", publicKey);
         map.put("privateKey", privateKey);
 
-        asymmetricKeyRepo.save(AsymmetricKey.builder()
+        keysRepo.save(Keys.builder()
                                 .keys(map)
                                 .build());
         return publicKey;
     }
 
     @Override
-    public String storeSymmetricKey(String data) throws Exception {
-        List<Map<String, String>> keyMap = asymmetricKeyRepo.findAll()
+    public String storeClientSecret(String encryptedClientSecret) throws Exception {
+
+        // 1. decode from base64
+        byte[] keyBytes = Base64.getDecoder().decode(encryptedClientSecret);
+
+        // 2. decrypt using private key
+        List<Map<String, String>> keyMap = keysRepo.findAll()
                 .stream()
-                .map(AsymmetricKey::getKeys)
+                .map(Keys::getKeys)
                 .toList();
-        String privateAsymmetricKey = null;
+        String privateKey = null;
         for(Map<String, String> key : keyMap){
             if(key.containsKey("privateKey")) {
-                privateAsymmetricKey = key.get("privateKey");
+                privateKey = key.get("privateKey");
             }
         }
-
         Cipher cipher = Cipher.getInstance("RSA");
-        cipher.init(Cipher.DECRYPT_MODE, getPrivateKeyFromBase64(privateAsymmetricKey));
-
-        byte[] encryptedSecretBytes = Base64.getDecoder().decode(data);
+        cipher.init(Cipher.DECRYPT_MODE, getPrivateKeyFromBase64(privateKey));
+        byte[] encryptedSecretBytes = Base64.getDecoder().decode(encryptedClientSecret);
         byte[] decryptedSecretBytes = cipher.doFinal(encryptedSecretBytes);
-        String clientSecretKey = new String(decryptedSecretBytes, StandardCharsets.UTF_8);
-        System.out.println("consumer side, client key: " + clientSecretKey);
 
+        // 3. convert back to original form
+
+        String decryptedClientSecret = new String(decryptedSecretBytes);
+        ObjectMapper objectMapper = new ObjectMapper();
+        String originalClientSecret = objectMapper.readValue(decryptedClientSecret, String.class);
+        System.out.println("client secret key: " + originalClientSecret);
+
+        // 4. store client secret
         Map<String, String> map = new HashMap<>();
-        map.put("clientSecret", clientSecretKey);
+        map.put("clientSecret", originalClientSecret);
         keysRepo.save(Keys.builder()
                 .keys(map)
                 .build());
