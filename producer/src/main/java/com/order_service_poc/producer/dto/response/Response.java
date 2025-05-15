@@ -7,7 +7,7 @@ import lombok.Setter;
 @Setter
 @Getter
 @Builder
-public class OrderResponse {
+public class Response {
     private Integer statusCode;
     private String message;
 }

@@ -39,7 +39,17 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public String placeOrder(OrderRequest orderRequest) {
+    public String placeOrder(String encryptedPayload) throws Exception {
+
+        System.out.println("Encrypted payload : " + encryptedPayload);
+        String originalEncodedPayload = encryptionService.decryptPayload(encryptedPayload);
+
+        System.out.println("Encoded json : " + originalEncodedPayload);
+        ObjectMapper objectMapper = new ObjectMapper();
+        OrderRequest orderRequest = objectMapper.readValue(originalEncodedPayload, OrderRequest.class);
+
+        System.out.println("Actual payload : " + orderRequest.getId() + ", " + orderRequest.getQuantity());
+
         Product product = productRepo.findById(orderRequest.getId())
                 .orElseThrow(() -> new RuntimeException("Product not found"));
         if(product.getQuantity() < orderRequest.getQuantity()){
