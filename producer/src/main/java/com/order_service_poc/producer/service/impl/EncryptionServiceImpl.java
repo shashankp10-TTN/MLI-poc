@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 import java.security.KeyFactory;
 import java.security.PublicKey;
 import java.security.spec.X509EncodedKeySpec;
@@ -28,7 +29,7 @@ public class EncryptionServiceImpl implements EncryptionService {
     public String storeExchangePublicKey(String publicKey) throws Exception {
         Map<String, String> keyMap = new HashMap<>();
         keyMap.put("publicKey", publicKey);
-
+        System.out.println("Public Key: " + publicKey);
         keysRepo.save(Keys.builder()
                 .keys(keyMap)
                 .build());
@@ -53,32 +54,62 @@ public class EncryptionServiceImpl implements EncryptionService {
         ObjectMapper objectMapper = new ObjectMapper();
         String jsonData = objectMapper.writeValueAsString(clientSecretKey);
 
-        return encryptPayload(jsonData);
+        return encryptClientSecret(jsonData);
     }
 
-
-    @Override
-    public String encryptPayload(String jsonData) throws Exception {
+    public String encryptClientSecret(String jsonData) throws Exception {
         // extract exchange key from the db
         List<Map<String, String>> keyMap = keysRepo.findAll()
                 .stream()
                 .map(Keys::getKeys)
                 .toList();
-        String exchangeKey = null;
+        String clientSecret = null;
         for (Map<String, String> key : keyMap) {
             if (key.containsKey("publicKey")) {
-                exchangeKey = key.get("publicKey");
+                clientSecret = key.get("publicKey");
             }
         }
 
         // encrypt the data using exchange key
         Cipher cipher = Cipher.getInstance("RSA");
-        cipher.init(Cipher.ENCRYPT_MODE, getPublicKeyFromBase64(exchangeKey));
+        cipher.init(Cipher.ENCRYPT_MODE, getPublicKeyFromBase64(clientSecret));
+        byte[] encryptedBytes = cipher.doFinal(jsonData.getBytes());
+
+        // convert in Base64 encode for safe transfer
+        System.out.println("Encrypted ClientSecret: " + Base64.getEncoder().encodeToString(encryptedBytes));
+        return Base64.getEncoder().encodeToString(encryptedBytes);
+    }
+
+    @Override
+    public String encryptPayload(String jsonData) throws Exception {
+        // extract client secret key from the db
+        List<Map<String, String>> keyMap = keysRepo.findAll()
+                .stream()
+                .map(Keys::getKeys)
+                .toList();
+        String clientSecret = null;
+        for (Map<String, String> key : keyMap) {
+            if (key.containsKey("clientSecret")) {
+                clientSecret = key.get("clientSecret");
+            }
+        }
+
+        // encrypt the data using exchange key
+        byte[] keyBytes = clientSecret.getBytes("UTF-8");
+        SecretKeySpec secretKey = new SecretKeySpec(keyBytes, "AES");
+
+        Cipher cipher = Cipher.getInstance("AES");
+        cipher.init(Cipher.ENCRYPT_MODE, secretKey);
         byte[] encryptedBytes = cipher.doFinal(jsonData.getBytes());
 
         // convert in Base64 encode for safe transfer
         return Base64.getEncoder().encodeToString(encryptedBytes);
     }
+
+//    private SecretKey getClientSecretFromBase64(String base64ClientSecretKey) {
+//        byte[] decodedKey = Base64.getDecoder().decode(base64ClientSecretKey);
+//        return new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");
+//    }
 
     private PublicKey getPublicKeyFromBase64(String base64PublicKey) throws Exception {
         byte[] decodedKey = Base64.getDecoder().decode(base64PublicKey);
