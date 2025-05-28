@@ -14,4 +14,5 @@ public interface EncryptionService {
    String decryptClientSecret(String encryptedPayload) throws Exception;
 
    String storeClientSecret(String encryptedClientSecret) throws Exception;
+
 }

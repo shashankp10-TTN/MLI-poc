@@ -1,10 +1,7 @@
 package com.order_service_poc.consumer.dto;
 
 import com.order_service_poc.consumer.config.ValidContactNo;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Positive;
-import jakarta.validation.constraints.PositiveOrZero;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -27,7 +24,7 @@ public class ProductRequest {
     private BigDecimal price;
 
     @PositiveOrZero(message = "Quantity cannot be negative")
-    @NotBlank(message = "Quantity cannot be empty")
+    @NotNull(message = "Quantity cannot be empty")
     private Integer quantity;
 
     @ValidContactNo

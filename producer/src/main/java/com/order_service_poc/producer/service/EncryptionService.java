@@ -8,5 +8,7 @@ public interface EncryptionService {
 
     String encryptPayload(String payload) throws Exception;
 
+    String setEncryptionType(Boolean isAESEncrypted);
+
 }
 
