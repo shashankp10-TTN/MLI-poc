@@ -6,12 +6,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.servlet.mvc.support.DefaultHandlerExceptionResolver;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
     @ExceptionHandler({HttpClientErrorException.BadRequest.class})
-    public ResponseEntity<Response> handleOutOfStockException(Exception ex) {
+    public ResponseEntity<Response> handleOutOfStockException(RuntimeException ex) {
         Response response = Response.builder()
                 .statusCode(HttpStatus.BAD_REQUEST.value())
                 .message(ex.getMessage())

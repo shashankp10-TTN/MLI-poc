@@ -7,6 +7,7 @@ import com.order_service_poc.consumer.dto.ProductRequest;
 import com.order_service_poc.consumer.entity.Product;
 import com.order_service_poc.consumer.service.EncryptionService;
 import com.order_service_poc.consumer.service.OrderService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -24,13 +25,13 @@ public class OrderController {
     private final EncryptionService encryptionService;
 
     @PostMapping("/add")
-    public ResponseEntity<String> addProduct(@RequestBody String encryptedPayload) throws Exception {
+    public ResponseEntity<String> addProduct(@Valid @RequestBody String encryptedPayload) throws Exception {
         String message = orderService.addProduct(encryptedPayload);
         return ResponseEntity.ok(message);
     }
 
     @PostMapping("/order")
-    public ResponseEntity<OrderResponse> placeOrder(@RequestBody String encryptedPayload) throws Exception {
+    public ResponseEntity<OrderResponse> placeOrder(@Valid @RequestBody String encryptedPayload) throws Exception {
         String message = orderService.placeOrder(encryptedPayload);
         return ResponseEntity.ok(OrderResponse.builder().message(message).build());
     }
@@ -42,7 +43,7 @@ public class OrderController {
     }
 
     @PostMapping("/data-key")
-    public ResponseEntity<String> generateAsymmetricKey(@RequestBody String encryptedClientSecret) throws Exception {
+    public ResponseEntity<String> generateAsymmetricKey(@Valid @RequestBody String encryptedClientSecret) throws Exception {
         String message = encryptionService.storeClientSecret(encryptedClientSecret);
         return ResponseEntity.ok(message);
     }

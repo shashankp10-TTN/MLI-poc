@@ -6,12 +6,14 @@ import com.order_service_poc.producer.dto.request.OrderRequest;
 import com.order_service_poc.producer.dto.request.ProductRequest;
 import com.order_service_poc.producer.dto.response.Response;
 import com.order_service_poc.producer.service.EncryptionService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.servlet.mvc.support.DefaultHandlerExceptionResolver;
 
 @RestController
 @RequiredArgsConstructor
@@ -22,7 +24,7 @@ public class OrderServiceController {
     private final EncryptionService encryptionService;
 
     @PostMapping("/add")
-    public ResponseEntity<String> addProduct(@RequestBody ProductRequest productRequest) throws Exception {
+    public ResponseEntity<String> addProduct(@Valid @RequestBody ProductRequest productRequest) throws Exception {
         try {
             String url = "https://localhost:8082/api/v1/consumer/add";
 
@@ -37,11 +39,13 @@ public class OrderServiceController {
             return ResponseEntity.ok("Product added successfully");
         } catch (HttpClientErrorException ex) {
             return ResponseEntity.badRequest().body("Something went wrong!");
+        } catch (JsonProcessingException ex) {
+            return ResponseEntity.badRequest().body("Enable to process data!");
         }
     }
 
     @PostMapping("/order")
-    public ResponseEntity<Response> placeOrder(@RequestBody OrderRequest orderRequest) {
+    public ResponseEntity<Response> placeOrder(@Valid @RequestBody OrderRequest orderRequest) {
         try {
             String url = "https://localhost:8082/api/v1/consumer/order";
 

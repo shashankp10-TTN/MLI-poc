@@ -18,6 +18,7 @@ public class Product {
     private String productName;
     private String description;
     private BigDecimal price;
+    private String contactNo;
     private Integer quantity;
 
 }
