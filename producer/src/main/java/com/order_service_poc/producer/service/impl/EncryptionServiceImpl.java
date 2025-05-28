@@ -5,6 +5,7 @@ import com.order_service_poc.producer.entity.Keys;
 import com.order_service_poc.producer.repo.KeysRepo;
 import com.order_service_poc.producer.service.EncryptionService;
 import lombok.RequiredArgsConstructor;
+import org.apache.coyote.BadRequestException;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.Cipher;
@@ -27,6 +28,9 @@ public class EncryptionServiceImpl implements EncryptionService {
 
     @Override
     public String storeExchangePublicKey(String publicKey) throws Exception {
+        if(publicKey==null || publicKey.isEmpty()){
+            throw new BadRequestException("public key cannot be empty");
+        }
         Map<String, String> keyMap = new HashMap<>();
         keyMap.put("publicKey", publicKey);
         System.out.println("Public Key: " + publicKey);
@@ -58,6 +62,9 @@ public class EncryptionServiceImpl implements EncryptionService {
     }
 
     public String encryptClientSecret(String jsonData) throws Exception {
+        if(jsonData==null || jsonData.isEmpty()){
+            throw new BadRequestException("Data cannot be empty");
+        }
         // extract exchange key from the db
         List<Map<String, String>> keyMap = keysRepo.findAll()
                 .stream()
@@ -82,6 +89,9 @@ public class EncryptionServiceImpl implements EncryptionService {
 
     @Override
     public String encryptPayload(String jsonData) throws Exception {
+        if(jsonData==null || jsonData.isEmpty()){
+            throw new BadRequestException("Data cannot be empty");
+        }
         // extract client secret key from the db
         List<Map<String, String>> keyMap = keysRepo.findAll()
                 .stream()
