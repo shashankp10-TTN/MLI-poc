@@ -24,7 +24,7 @@ public class OrderServiceController {
     @PostMapping("/add")
     public ResponseEntity<String> addProduct(@RequestBody ProductRequest productRequest) throws Exception {
         try {
-            String url = "http://localhost:8082/api/v1/consumer/add";
+            String url = "https://localhost:8082/api/v1/consumer/add";
 
             System.out.println("Actual payload : " + productRequest.getProductName() + ", " + productRequest.getPrice());
             ObjectMapper objectMapper = new ObjectMapper();
@@ -43,7 +43,7 @@ public class OrderServiceController {
     @PostMapping("/order")
     public ResponseEntity<Response> placeOrder(@RequestBody OrderRequest orderRequest) {
         try {
-            String url = "http://localhost:8082/api/v1/consumer/order";
+            String url = "https://localhost:8082/api/v1/consumer/order";
 
             System.out.println("Actual payload : " + orderRequest.getId() + ", " + orderRequest.getQuantity());
             ObjectMapper objectMapper = new ObjectMapper();
@@ -75,7 +75,7 @@ public class OrderServiceController {
     @GetMapping("/public-key")
     public ResponseEntity<String> getExchangePublicKey() {
         try {
-            String url = "http://localhost:8082/api/v1/consumer/public-key";
+            String url = "https://localhost:8082/api/v1/consumer/public-key";
             ResponseEntity<String> response =  restTemplate.getForEntity(url, String.class);
             String publicKey = response.getBody();
             return ResponseEntity.ok(encryptionService.storeExchangePublicKey(publicKey));
@@ -89,7 +89,7 @@ public class OrderServiceController {
     @PostMapping("/data-key")
     public ResponseEntity<String> sendClientSecret() {
         try {
-            String url = "http://localhost:8082/api/v1/consumer/data-key";
+            String url = "https://localhost:8082/api/v1/consumer/data-key";
             String encryptedSymmetricKey = encryptionService.generateClientSecret();
             restTemplate.postForEntity(url,encryptedSymmetricKey, String.class);
             return ResponseEntity.ok("Client secret generated successfully!");

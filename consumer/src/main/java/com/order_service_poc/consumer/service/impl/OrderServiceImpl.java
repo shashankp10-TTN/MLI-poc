@@ -9,6 +9,7 @@ import com.order_service_poc.consumer.repo.ProductRepo;
 import com.order_service_poc.consumer.service.EncryptionService;
 import com.order_service_poc.consumer.service.OrderService;
 import lombok.RequiredArgsConstructor;
+import org.apache.coyote.BadRequestException;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -20,6 +21,9 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public String addProduct(String encryptedPayload) throws Exception {
+        if(encryptedPayload==null || encryptedPayload.isEmpty()){
+            throw new BadRequestException("Payload cannot be empty");
+        }
         System.out.println("Encrypted payload : " + encryptedPayload);
         String originalEncodedPayload = encryptionService.decryptPayload(encryptedPayload);
 
@@ -40,7 +44,9 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public String placeOrder(String encryptedPayload) throws Exception {
-
+        if(encryptedPayload==null || encryptedPayload.isEmpty()){
+            throw new BadRequestException("Payload cannot be empty");
+        }
         System.out.println("Encrypted payload : " + encryptedPayload);
         String originalEncodedPayload = encryptionService.decryptPayload(encryptedPayload);
 

@@ -5,6 +5,7 @@ import com.order_service_poc.consumer.entity.Keys;
 import com.order_service_poc.consumer.repo.KeysRepo;
 import com.order_service_poc.consumer.service.EncryptionService;
 import lombok.RequiredArgsConstructor;
+import org.apache.coyote.BadRequestException;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.Cipher;
@@ -48,6 +49,9 @@ public class EncryptionServiceImpl implements EncryptionService {
 
     @Override
     public String storeClientSecret(String encryptedClientSecret) throws Exception {
+        if(encryptedClientSecret==null || encryptedClientSecret.isEmpty()){
+            throw new BadRequestException("client secret cannot be empty");
+        }
         System.out.println("encrypted client secret: " + encryptedClientSecret);
         String originalClientSecret = decryptClientSecret(encryptedClientSecret);
 
@@ -65,6 +69,9 @@ public class EncryptionServiceImpl implements EncryptionService {
 
     @Override
     public String decryptClientSecret(String encryptedPayload) throws Exception {
+        if(encryptedPayload==null || encryptedPayload.isEmpty()){
+            throw new BadRequestException("Payload cannot be empty");
+        }
         // 1. decrypt using private key
         List<Map<String, String>> keyMap = keysRepo.findAll()
                 .stream()
@@ -87,6 +94,9 @@ public class EncryptionServiceImpl implements EncryptionService {
 
     @Override
     public String decryptPayload(String encryptedPayload) throws Exception {
+        if(encryptedPayload==null || encryptedPayload.isEmpty()){
+            throw new BadRequestException("Payload cannot be empty");
+        }
         //  decrypt using secret key
         List<Map<String, String>> keyMap = keysRepo.findAll()
                 .stream()
@@ -116,9 +126,5 @@ public class EncryptionServiceImpl implements EncryptionService {
         return keyFactory.generatePrivate(keySpec);
     }
 
-//    private SecretKey getClientSecretFromBase64(String base64ClientSecretKey)  {
-//        byte[] decodedKey = Base64.getDecoder().decode(base64ClientSecretKey);
-//        return new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");
-//    }
 
 }
