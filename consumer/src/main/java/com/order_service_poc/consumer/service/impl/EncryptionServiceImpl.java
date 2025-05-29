@@ -132,7 +132,7 @@ public class EncryptionServiceImpl implements EncryptionService {
             decryptedSecretBytes = cipher.doFinal(encryptedSecretBytes);
         } else {
 
-         //  Resource : https://medium.com/@johnvazna/implementing-local-aes-gcm-encryption-and-decryption-in-java-ac1dacaaa409
+            //  Resource : https://medium.com/@johnvazna/implementing-local-aes-gcm-encryption-and-decryption-in-java-ac1dacaaa409
 
             byte[] decodedCipherText = Base64.getDecoder().decode(encryptedPayload);
 

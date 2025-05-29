@@ -120,10 +120,7 @@ public class EncryptionServiceImpl implements EncryptionService {
         }
 
         boolean isAESEncrypted = encryptionTypeList.stream().findFirst().get().isAESEncrypted();
-
-
         if(isAESEncrypted){
-            // encrypt the data using exchange key
             byte[] keyBytes = clientSecret.getBytes("UTF-8");
             SecretKeySpec secretKey = new SecretKeySpec(keyBytes, "AES");
 
@@ -131,21 +128,18 @@ public class EncryptionServiceImpl implements EncryptionService {
             cipher.init(Cipher.ENCRYPT_MODE, secretKey);
             System.out.println("Encryption using AES");
             byte[] encryptedBytes = cipher.doFinal(jsonData.getBytes());
-            // convert in Base64 encode for safe transfer
             return Base64.getEncoder().encodeToString(encryptedBytes);
         } else {
-            // encrypt the data using exchange key
-            /*
-            byte[] keyBytes = clientSecret.getBytes("UTF-8");
-            SecretKeySpec secretKey = new SecretKeySpec(keyBytes, "AES/GCM/NoPadding");
-
-            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
-            cipher.init(Cipher.ENCRYPT_MODE, secretKey);
-            System.out.println("Encryption using AES/GCM/NoPadding");
-            encryptedBytes = cipher.doFinal(jsonData.getBytes());
-
+            /**
+             *   Explanation :
+             *      1. Generating a random initialization vector
+             *      2. Generating cipher instance of GCM/No padding
+             *      3. Started cipher in encryption mode with client secret and initialization vector
+             *      4. Using cipher and GCM spec, json data is encrypted with authentication tag... i.e.  [encrypted data][tag]
+             *      5. Created a new byte array and appending iv in front of encrypted data... i.e. [IV][encrypted data][tag]
+             *      6. final byte array is encoded in base64
              */
-            // Generate a random IV
+            // Generate a random initialization vector
             byte[] iv = new byte[IV_LENGTH_ENCRYPT];
             SecureRandom secureRandom = new SecureRandom();
             secureRandom.nextBytes(iv);
@@ -155,7 +149,7 @@ public class EncryptionServiceImpl implements EncryptionService {
             GCMParameterSpec gcmSpec = new GCMParameterSpec(TAG_LENGTH_ENCRYPT * 8, iv);
             cipher.init(Cipher.ENCRYPT_MODE, getSecretKeySpec(clientSecret), gcmSpec);
 
-            // Encrypt the plaintext
+            // Encrypt the json data
             byte[] encryptedBytes = cipher.doFinal(jsonData.getBytes(StandardCharsets.UTF_8));
 
             // Combine IV and encrypted text and encode them as Base64
